@@ -2,6 +2,7 @@ App = {
   web3Provider: null,
   contracts: {},
   account: '0x0',
+  hasVoted: false,
 
   init: function() {
     return App.initWeb3();
@@ -28,19 +29,23 @@ App = {
       // Connect provider to interact with contract
       App.contracts.Election.setProvider(App.web3Provider);
 
-      App.listenForVotedEvent();
+      App.listenForEvents();
 
       return App.render();
     });
   },
 
-  listenForVotedEvent: function() {
+  // Listen for events emitted from the contract
+  listenForEvents: function() {
     App.contracts.Election.deployed().then(function(instance) {
+      // Restart Chrome if you are unable to receive this event
+      // This is a known issue with Metamask
+      // https://github.com/MetaMask/metamask-extension/issues/2393
       instance.votedEvent({}, {
         fromBlock: 0,
-        toBlock: "latest"
+        toBlock: 'latest'
       }).watch(function(error, event) {
-        console.log("Event triggered", event);
+        console.log("event triggered", event)
         // Reload when a new vote is recorded
         App.render();
       });
@@ -91,11 +96,10 @@ App = {
       }
       return electionInstance.voters(App.account);
     }).then(function(hasVoted) {
-      if (hasVoted) {
-        // Do not allow user to vote again
-        $("form").hide();
+      // Do not allow a user to vote
+      if(hasVoted) {
+        $('form').hide();
       }
-
       loader.hide();
       content.show();
     }).catch(function(error) {
@@ -104,15 +108,15 @@ App = {
   },
 
   castVote: function() {
-    var candidateId = $("#candidatesSelect").val();
+    var candidateId = $('#candidatesSelect').val();
     App.contracts.Election.deployed().then(function(instance) {
       return instance.vote(candidateId, { from: App.account });
     }).then(function(result) {
       // Wait for votes to update
       $("#content").hide();
       $("#loader").show();
-    }).catch(function(error) {
-      console.error(error);
+    }).catch(function(err) {
+      console.error(err);
     });
   }
 };
