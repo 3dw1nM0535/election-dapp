@@ -28,7 +28,22 @@ App = {
       // Connect provider to interact with contract
       App.contracts.Election.setProvider(App.web3Provider);
 
+      App.listenForVotedEvent();
+
       return App.render();
+    });
+  },
+
+  listenForVotedEvent: function() {
+    App.contracts.Election.deployed().then(function(instance) {
+      instance.votedEvent({}, {
+        fromBlock: 0,
+        toBlock: "latest"
+      }).watch(function(error, event) {
+        console.log("Event triggered", event);
+        // Reload when a new vote is recorded
+        App.render();
+      });
     });
   },
 
